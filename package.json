@@ -6,7 +6,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "test:e2e:barang-masuk": "tsx scripts/e2e-barang-masuk.ts"
   },
   "dependencies": {
     "@google/genai": "^2.11.0",

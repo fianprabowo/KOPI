@@ -1,5 +1,5 @@
 import { getKoperasiRef, query, queryOne } from "./db";
-import { classifyIntent, getHelpReply, getOutOfScopeReply, getUploadNotaReply } from "./intent";
+import { classifyIntent, getHelpReply, getOutOfScopeReply, getUploadNotaReply, isOutOfScopeCommand } from "./intent";
 import { generateSql, generateSummary, generateDraftSurat } from "./llm";
 import { generateBarangMasukReply, type PendingBarangMasukDraft, resolveBarangMasukPhase, advanceBarangMasukPhase } from "./copilot-reply";
 import {
@@ -960,7 +960,9 @@ export async function orchestrateChat(command: string, context?: ChatContext): P
   });
 
   if (!intent.in_scope || intent.intent === "out_of_scope") {
-    const maybeBarang = parseBarangMasukText(command) ?? parseProductOnly(command);
+    const maybeBarang = !isOutOfScopeCommand(command)
+      ? (parseBarangMasukText(command) ?? parseProductOnly(command))
+      : null;
     if (maybeBarang) {
       const result = await handleBarangMasuk(command, context);
       result.execution_time_ms = Date.now() - start;

@@ -2,6 +2,12 @@ import { getCapabilitiesText, getFeatureSuggestionPrompts, getHelpSummary } from
 import { geminiJson, isGeminiAvailable } from "./gemini";
 import { isBarangMasukConfirm, parseBarangMasukText, parseHargaBeli, parseProductOnly } from "./parse-barang-masuk";
 
+export function isOutOfScopeCommand(command: string): boolean {
+  const lower = command.toLowerCase().trim();
+  return /presiden|politik|cuaca|resep|coding|hiburan|film|lagu|sepak\s*bola/i.test(lower)
+    || /^siapa\s+(?!ketua|pengurus|bendahara|sekretaris|koperasi)/i.test(lower);
+}
+
 export type ChatIntent =
   | "query"
   | "help"
@@ -24,6 +30,7 @@ export type IntentResult = {
 const FALLBACK_SUGGESTIONS = getFeatureSuggestionPrompts();
 
 function structuralIntent(command: string): IntentResult | null {
+  if (isOutOfScopeCommand(command)) return null;
   if (parseBarangMasukText(command) || parseProductOnly(command)) {
     return {
       in_scope: true,
@@ -40,12 +47,6 @@ function extractBankName(command: string): string {
   const match = command.match(/\b(bri|bca|mandiri|bni)\b/i);
   if (!match) return "BRI";
   return match[1].toUpperCase();
-}
-
-function isOutOfScopeCommand(command: string): boolean {
-  const lower = command.toLowerCase().trim();
-  return /presiden|politik|cuaca|resep|coding|hiburan|film|lagu|sepak\s*bola/i.test(lower)
-    || /^siapa\s+(?!ketua|pengurus|bendahara|sekretaris|koperasi)/i.test(lower);
 }
 
 function localClassifyIntent(command: string): IntentResult | null {
@@ -99,6 +100,16 @@ function localClassifyIntent(command: string): IntentResult | null {
       confidence: 0.95,
       reasoning: "form tambah barang masuk",
       suggested_prompts: ["Upload foto nota", "Stok barangku"],
+    };
+  }
+
+  if (/^tambah\s+barang\b/i.test(lower) && !/^tambah\s+produk\b/i.test(lower)) {
+    return {
+      in_scope: true,
+      intent: "barang_masuk",
+      confidence: 0.9,
+      reasoning: "tambah barang masuk",
+      suggested_prompts: [],
     };
   }
 

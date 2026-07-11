@@ -1,5 +1,8 @@
 import { extractProdukName } from "./tambah-produk-guide";
 
+const OUT_OF_SCOPE_HINTS =
+  /presiden|politik|cuaca|resep|coding|hiburan|film|lagu|sepak\s*bola/i;
+
 export type ParsedBarangMasuk = {
   qty: number;
   unit?: string;
@@ -8,11 +11,17 @@ export type ParsedBarangMasuk = {
 };
 
 const PRODUCT_HINTS =
-  /beras|gula|aqua|galon|premium|pasir|minyak|telur|susu|kopi|teh|sabun|detergen|biskuit|mie|indomie/i;
+  /beras|gula|aqua|galon|premium|pasir|minyak|telur|susu|kopi|teh|sabun|detergen|biskuit|mie|indomie|gas|elpig|elpiji|lpg|pisang|sayur|buah/i;
 
-const ACTION_HINTS = /masuk|tambah|catat|beli|terima|input|simpan|stock|stok/i;
+const ACTION_HINTS = /masuk|tambah|catat|beli|terima|input|simpan|stock|stok|barang/i;
 
-const UNIT_PATTERN = /\b(\d+(?:[.,]\d+)?)\s*(kilo|kg|kilogram|karung|galon|liter|buah|pcs|pack|dus)\b/i;
+const UNIT_WORDS =
+  "kilo|kg|kilogram|karung|galon|liter|buah|biji|butir|pcs|pack|dus|ikat|batang|lembar|kotak|sachet|bungkus|kaleng|botol|ons|gram|gr|rim|lusin|bal|sak|ball|jerigen|tabung|pasang|unit";
+
+const UNIT_PATTERN = new RegExp(
+  `\\b(\\d+(?:[.,]\\d+)?)\\s*(${UNIT_WORDS})\\b`,
+  "i",
+);
 
 export function parseHargaBeli(text: string): number | undefined {
   const lower = text.toLowerCase();
@@ -142,12 +151,29 @@ export function parseProductOnly(text: string): { productQuery: string } | null 
   const lower = normalizeText(text).trim();
   if (lower.length < 3) return null;
 
+  if (OUT_OF_SCOPE_HINTS.test(lower) || /^siapa\s+(?!ketua|pengurus|bendahara|sekretaris|koperasi)/i.test(lower)) {
+    return null;
+  }
+
   if (/^(help|bantuan|stok|laporan|penjualan|berapa|cek|lihat|tampilkan|buatkan|siapa|buka|bank|rekening|upload|nota|foto|struk)/i.test(lower)) {
     return null;
   }
 
   if (/upload|nota|foto nota|struk/i.test(lower)) {
     return null;
+  }
+
+  const tambahBarang = lower.match(/^tambah\s+barang\s+(.+)/i);
+  if (tambahBarang) {
+    const productQuery = extractProdukName(
+      tambahBarang[1]
+        .replace(UNIT_PATTERN, " ")
+        .replace(/(?:harga\s*beli|harga|beli|@|rp\.?)\s*[\d.,]+/gi, " ")
+        .replace(/\b(masuk|tambah|catat|beli|terima|input|simpan|barang|barangku|stok|produk|baru|harga)\b/g, " ")
+        .replace(/\s+/g, " ")
+        .trim(),
+    );
+    if (productQuery.length >= 2) return { productQuery };
   }
 
   if (PRODUCT_HINTS.test(lower)) {
