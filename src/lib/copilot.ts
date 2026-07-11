@@ -111,8 +111,8 @@ function initDraftPhase(draft: PendingBarangMasukDraft): PendingBarangMasukDraft
 
   if (d.phase === "keterangan") {
     if (!d.keterangan && !d.skip_keterangan) return d;
-    d.phase = "dokumentasi";
-    return initDraftPhase(d);
+    d.phase = "confirm";
+    return d;
   }
 
   if (d.phase === "harga_jual") {

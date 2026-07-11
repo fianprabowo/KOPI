@@ -71,11 +71,9 @@ export function resolveBarangMasukPhase(draft: PendingBarangMasukDraft): BarangM
         ? resolveBarangMasukPhase({ ...draft, phase: "keterangan" })
         : "need_harga_jual";
     case "keterangan":
-      return draft.keterangan || draft.skip_keterangan
-        ? resolveBarangMasukPhase({ ...draft, phase: "dokumentasi" })
-        : "need_keterangan";
+      return draft.keterangan || draft.skip_keterangan ? "need_confirm" : "need_keterangan";
     case "dokumentasi":
-      return draft.dokumentasi_nama || draft.skip_dokumentasi ? "need_confirm" : "need_dokumentasi";
+      return draft.dokumentasi_nama || draft.skip_dokumentasi ? "need_confirm" : "need_confirm";
     case "confirm":
       return "need_confirm";
     default:
@@ -96,7 +94,7 @@ export function advanceBarangMasukPhase(draft: PendingBarangMasukDraft): Pending
     return next;
   }
   if (phase === "keterangan") {
-    next.phase = "dokumentasi";
+    next.phase = "confirm";
     return next;
   }
   if (phase === "dokumentasi") {
@@ -133,7 +131,7 @@ export function buildBarangMasukSuggestions(
   }
 
   if (phase === "need_dokumentasi") {
-    return ["Lewati dokumentasi", "Ya, simpan barang masuk", "Batal"];
+    return ["Lewati thumbnail", "Ya, simpan barang masuk", "Batal"];
   }
 
   if (phase === "need_confirm") {
@@ -173,15 +171,15 @@ function formatBarangMasukSummary(ctx: ReplyContext, phase: BarangMasukPhase): s
 
   if (phase === "need_dokumentasi") {
     const ket = d.keterangan ? ` Keterangan: ${d.keterangan.slice(0, 60)}.` : "";
-    return `Hampir selesai.${ket} Upload dokumentasi lewat 📷 (JPG/PNG/PDF) atau ketik "lewati dokumentasi".`;
+    return `Thumbnail produk opsional.${ket} Bisa tambah lewat form Edit, atau lanjut simpan tanpa thumbnail.`;
   }
 
   if (phase === "need_confirm") {
     const hargaBeli = d.harga_beli > 0 ? ` Harga beli Rp ${d.harga_beli.toLocaleString("id-ID")}.` : "";
     const hargaJual = d.harga_jual && d.harga_jual > 0 ? ` Harga jual Rp ${d.harga_jual.toLocaleString("id-ID")}.` : "";
     const ket = d.keterangan ? ` Keterangan: ${d.keterangan.slice(0, 80)}.` : "";
-    const dok = d.dokumentasi_nama ? ` Lampiran: ${d.dokumentasi_nama}.` : "";
-    return `Siap simpan ${d.nama_tampilan ?? d.nama_produk} ${d.jumlah_masuk} ${d.unit ?? ""}.${hargaBeli}${hargaJual}${ket}${dok} Konfirmasi ya?`;
+    const thumb = d.dokumentasi_nama ? ` Thumbnail: ${d.dokumentasi_nama}.` : "";
+    return `Siap simpan ${d.nama_tampilan ?? d.nama_produk} ${d.jumlah_masuk} ${d.unit ?? ""}.${hargaBeli}${hargaJual}${ket}${thumb} Konfirmasi ya?`;
   }
 
   return ctx.situation;

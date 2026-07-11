@@ -24,7 +24,7 @@ function ProductThumbnail({ product }: { product: ProductRow }) {
   }
   return (
     <div className="flex h-[50px] w-[50px] items-center justify-center rounded bg-slate-100 text-[10px] text-slate-400">
-      No Image
+      —
     </div>
   );
 }

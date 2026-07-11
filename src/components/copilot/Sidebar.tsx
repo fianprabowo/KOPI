@@ -122,6 +122,7 @@ export function CopilotChat({
   const [notaEditTarget, setNotaEditTarget] = useState<{ notaId: string; itemIndex: number } | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const docInputRef = useRef<HTMLInputElement>(null);
+  const mainScrollRef = useRef<HTMLElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
@@ -139,8 +140,18 @@ export function CopilotChat({
   }, []);
 
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages, loading, showBarangMasukForm]);
+    const scrollToBottom = () => {
+      const main = mainScrollRef.current;
+      if (main) {
+        main.scrollTo({ top: main.scrollHeight, behavior: "smooth" });
+        return;
+      }
+      messagesEndRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
+    };
+
+    const frame = requestAnimationFrame(scrollToBottom);
+    return () => cancelAnimationFrame(frame);
+  }, [messages, loading, showBarangMasukForm, notaQueue, showNotaUnmatchedEdit, confirmOpen]);
 
   useEffect(() => {
     const el = textareaRef.current;
@@ -176,7 +187,7 @@ export function CopilotChat({
       addBotMessage({
         content: buildNotaUnmatchedFollowUp(incomplete.draft),
         suggested_prompts: [
-          "penyedia Toko Makmur, satuan tabung",
+          "penyedia Toko Makmur",
           "kategori Kebutuhan Rumah Tangga, penyedia UD Sumber",
         ],
       });
@@ -464,7 +475,7 @@ export function CopilotChat({
         if (!isNotaUnmatchedComplete(updated)) {
           addBotMessage({
             content: buildNotaUnmatchedFollowUp(updated),
-            suggested_prompts: ["penyedia Toko Makmur, satuan tabung", "Edit lewat tombol di antrian"],
+            suggested_prompts: ["penyedia Toko Makmur", "Simpan semua nota"],
           });
           return;
         }
@@ -535,7 +546,6 @@ export function CopilotChat({
         supplier: supplier ?? "",
         tanggal: data.extracted_data.tanggal,
         total: Number(data.extracted_data.total),
-        dokumentasiFile: file,
         items: items.map((item) => ({
           produk_sample_id: item.produk_sample_id,
           jumlah_masuk: item.qty,
@@ -551,8 +561,8 @@ export function CopilotChat({
       const needsMeta = entry.unmatched.some((u) => !isNotaUnmatchedComplete(u));
       addBotMessage({
         content: readyCount > 0
-          ? `Nota "${file.name}" masuk antrian (${readyCount} item cocok master${pendingCount ? `, ${pendingCount} produk baru perlu dilengkapi` : ""}).`
-          : `Nota "${file.name}" masuk antrian (${pendingCount} produk baru perlu dilengkapi).`,
+          ? `Nota "${file.name}" masuk antrian (${readyCount} item cocok master${pendingCount ? `, ${pendingCount} produk baru perlu dilengkapi` : ""}). Foto nota hanya untuk baca data — thumbnail produk opsional, bisa ditambah manual lewat form.`
+          : `Nota "${file.name}" masuk antrian (${pendingCount} produk baru perlu dilengkapi). Foto nota hanya untuk baca data — thumbnail produk opsional.`,
         data: [
           ...items.map((i) => ({ produk: i.nama, qty: i.qty, harga: i.harga, status: "cocok master" })),
           ...entry.unmatched.map((i) => ({
@@ -563,7 +573,7 @@ export function CopilotChat({
           })),
         ],
         suggested_prompts: needsMeta
-          ? ["penyedia Toko Makmur, satuan tabung", "Simpan semua nota"]
+          ? ["penyedia Toko Makmur", "Simpan semua nota"]
           : ["Simpan semua nota", "Upload nota lagi"],
       });
 
@@ -671,30 +681,17 @@ export function CopilotChat({
     const summaries: string[] = [];
     const createdProducts: string[] = [];
     for (const nota of queue) {
-      let res: Response;
-      if (nota.dokumentasiFile) {
-        const form = new FormData();
-        form.append("tanggal_masuk", nota.tanggal);
-        form.append("keterangan", nota.supplier || `Nota ${nota.fileName}`);
-        form.append("items", JSON.stringify(nota.items));
-        form.append("unmatched_items", JSON.stringify(nota.unmatched));
-        form.append("dokumentasi", nota.dokumentasiFile);
-        form.append("confirmed_by", "bendahara");
-        res = await fetch("/api/barang-masuk", { method: "POST", body: form });
-      } else {
-        res = await fetch("/api/barang-masuk", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            tanggal_masuk: nota.tanggal,
-            keterangan: nota.supplier,
-            items: nota.items,
-            unmatched_items: nota.unmatched,
-            dokumentasi_url: nota.dokumentasi_url,
-            confirmed_by: "bendahara",
-          }),
-        });
-      }
+      const res = await fetch("/api/barang-masuk", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          tanggal_masuk: nota.tanggal,
+          keterangan: nota.supplier || `Nota ${nota.fileName}`,
+          items: nota.items,
+          unmatched_items: nota.unmatched,
+          confirmed_by: "bendahara",
+        }),
+      });
       const data = await res.json();
       if (!data.success) throw new Error(data.error ?? `Gagal simpan ${nota.fileName}`);
       summaries.push(`${nota.supplier}: ${nota.items.length + nota.unmatched.length} item`);
@@ -1034,7 +1031,7 @@ export function CopilotChat({
         </div>
       </header>
 
-      <main className="flex-1 overflow-y-auto px-3 py-4 sm:px-4">
+      <main ref={mainScrollRef} className="flex-1 overflow-y-auto px-3 py-4 sm:px-4">
         <div className={`mx-auto flex flex-col gap-2 ${embedded ? "w-full" : "max-w-2xl"}`}>
           {messages.map((msg, i) => (
             <ChatMessage
@@ -1062,13 +1059,8 @@ export function CopilotChat({
               </div>
             </div>
           )}
-          <div ref={messagesEndRef} />
-        </div>
-      </main>
 
-      {notaQueue.length > 0 && !showBarangMasukForm && (
-        <div className="shrink-0 border-t border-slate-200/60 bg-[#f0f0f0] px-3 py-3">
-          <div className={`mx-auto ${embedded ? "w-full" : "max-w-2xl"}`}>
+          {notaQueue.length > 0 && !showBarangMasukForm && (
             <NotaQueuePanel
               queue={notaQueue}
               loading={loading || confirmLoading}
@@ -1083,9 +1075,11 @@ export function CopilotChat({
                 addBotMessage({ content: "Antrian nota dikosongkan." });
               }}
             />
-          </div>
+          )}
+
+          <div ref={messagesEndRef} />
         </div>
-      )}
+      </main>
 
       {showBarangMasukForm && (
         <div className="shrink-0 border-t border-slate-200/60 bg-[#f0f0f0] px-3 py-3">

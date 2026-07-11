@@ -16,8 +16,6 @@ export type NotaQueueEntry = {
   supplier: string;
   tanggal: string;
   total: number;
-  dokumentasi_url?: string;
-  dokumentasiFile?: File;
   items: NotaQueueItem[];
   unmatched: NotaUnmatchedDraft[];
 };

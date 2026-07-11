@@ -290,7 +290,12 @@ export function BarangMasukForm({ onSubmit, onCancel, loading = false, initialVa
         </label>
 
         <div>
-          <span className="mb-1 block text-xs font-medium text-slate-600">Dokumentasi</span>
+          <span className="mb-1 block text-xs font-medium text-slate-600">
+            Thumbnail produk <span className="font-normal text-slate-400">(opsional)</span>
+          </span>
+          <p className="mb-1.5 text-[10px] text-slate-400">
+            Bukan foto nota OCR. Bisa dikosongkan atau diisi manual (JPG/PNG/PDF).
+          </p>
           <input
             ref={fileInputRef}
             type="file"
@@ -307,7 +312,7 @@ export function BarangMasukForm({ onSubmit, onCancel, loading = false, initialVa
             disabled={loading}
             className="w-full rounded-lg border border-dashed border-slate-300 px-3 py-3 text-left text-xs text-slate-600 hover:border-emerald-400 hover:bg-emerald-50/50 disabled:opacity-50"
           >
-            {dokumentasi ? dokumentasi.name : "Pilih file (JPG, PNG, PDF — maks. 10MB)"}
+            {dokumentasi ? dokumentasi.name : "Pilih thumbnail (opsional, maks. 10MB)"}
           </button>
           {dokumentasiError && <p className="mt-1 text-xs text-red-600">{dokumentasiError}</p>}
         </div>

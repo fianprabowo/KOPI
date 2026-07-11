@@ -64,9 +64,9 @@ export function parseBarangMasukExtras(text: string): BarangMasukExtras {
 
 export function isSkipOptionalField(text: string): boolean {
   return /^(lewati|skip|tanpa|tidak ada|nanti|belum|\-)$/i.test(text.trim())
-    || /lewati\s+(harga\s*jual|keterangan|dokumentasi|lampiran)/i.test(text)
-    || /tanpa\s+(harga\s*jual|keterangan|dokumentasi|lampiran)/i.test(text)
-    || /^tidak\s+ada\s+(keterangan|dokumentasi|lampiran)/i.test(text);
+    || /lewati\s+(harga\s*jual|keterangan|dokumentasi|lampiran|thumbnail)/i.test(text)
+    || /tanpa\s+(harga\s*jual|keterangan|dokumentasi|lampiran|thumbnail)/i.test(text)
+    || /^tidak\s+ada\s+(keterangan|dokumentasi|lampiran|thumbnail)/i.test(text);
 }
 
 export function isSkipHargaJual(text: string): boolean {
@@ -78,7 +78,7 @@ export function isSkipKeterangan(text: string): boolean {
 }
 
 export function isSkipDokumentasi(text: string): boolean {
-  return /tanpa dokumentasi|tanpa lampiran|lewati dokumentasi|lewati lampiran|skip dokumentasi/i.test(text.toLowerCase());
+  return /tanpa dokumentasi|tanpa lampiran|tanpa thumbnail|lewati dokumentasi|lewati lampiran|lewati thumbnail|skip dokumentasi|skip thumbnail/i.test(text.toLowerCase());
 }
 
 export function isDokumentasiUploaded(text: string): boolean {

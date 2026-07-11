@@ -39,31 +39,50 @@ export function parseProdukMetaFromText(text: string): ProdukMeta {
   const meta: ProdukMeta = {};
   const lower = text.toLowerCase();
 
-  const patterns: { key: keyof ProdukMeta; regex: RegExp }[] = [
+  const segmentPatterns: { key: keyof ProdukMeta; regex: RegExp }[] = [
+    { key: "kategori", regex: /^(?:kategori(?:\s+produk)?)\s*[:\-]?\s*(.+)$/i },
+    { key: "jenis_barang", regex: /^(?:jenis(?:\s+barang)?)\s*[:\-]?\s*(.+)$/i },
+    { key: "potensi_desa", regex: /^(?:potensi(?:\s+desa)?)\s*[:\-]?\s*(.+)$/i },
+    { key: "penyedia", regex: /^(?:penyedia|pemasok|supplier)\s*[:\-]?\s*(.+)$/i },
+  ];
+
+  const segments = text.split(/[,;]+/).map((part) => part.trim()).filter(Boolean);
+  for (const segment of segments) {
+    for (const { key, regex } of segmentPatterns) {
+      const match = segment.match(regex);
+      if (match?.[1]) {
+        meta[key] = match[1].trim();
+        break;
+      }
+    }
+  }
+
+  const inlinePatterns: { key: keyof ProdukMeta; regex: RegExp }[] = [
     {
       key: "kategori",
-      regex: /(?:kategori(?:\s+produk)?)\s*[:\-]?\s*([\w\s]+?)(?=\s+(?:jenis|potensi|penyedia|pemasok|supplier)\b|$)/i,
+      regex: /(?:kategori(?:\s+produk)?)\s*[:\-]?\s*([\w\s]+?)(?=(?:,|;|\s+(?:jenis|potensi|penyedia|pemasok|supplier|satuan|unit)\b)|$)/i,
     },
     {
       key: "jenis_barang",
-      regex: /(?:jenis(?:\s+barang)?)\s*[:\-]?\s*([\w\s]+?)(?=\s+(?:kategori|potensi|penyedia|pemasok|supplier)\b|$)/i,
+      regex: /(?:jenis(?:\s+barang)?)\s*[:\-]?\s*([\w\s]+?)(?=(?:,|;|\s+(?:kategori|potensi|penyedia|pemasok|supplier|satuan|unit)\b)|$)/i,
     },
     {
       key: "potensi_desa",
-      regex: /(?:potensi(?:\s+desa)?)\s*[:\-]?\s*([\w\s]+?)(?=\s+(?:kategori|jenis|penyedia|pemasok|supplier)\b|$)/i,
+      regex: /(?:potensi(?:\s+desa)?)\s*[:\-]?\s*([\w\s]+?)(?=(?:,|;|\s+(?:kategori|jenis|penyedia|pemasok|supplier|satuan|unit)\b)|$)/i,
     },
     {
       key: "penyedia",
-      regex: /(?:penyedia|pemasok|supplier)\s*[:\-]?\s*([^,.\n]+?)(?=\s+(?:kategori|jenis|potensi)\b|$)/i,
+      regex: /(?:penyedia|pemasok|supplier)\s*[:\-]?\s*([^,;.\n]+?)(?=(?:,|;|\s+(?:kategori|jenis|potensi|satuan|unit)\b)|$)/i,
     },
   ];
 
-  for (const { key, regex } of patterns) {
-    const m = text.match(regex);
-    if (m?.[1]) meta[key] = m[1].trim();
+  for (const { key, regex } of inlinePatterns) {
+    if (meta[key]) continue;
+    const match = text.match(regex);
+    if (match?.[1]) meta[key] = match[1].trim();
   }
 
-  const dariMatch = text.match(/dari\s+(?:supplier\s+)?([^,.\n]+)/i);
+  const dariMatch = text.match(/dari\s+(?:supplier\s+)?([^,;.\n]+)/i);
   if (dariMatch?.[1] && !meta.penyedia) {
     meta.penyedia = dariMatch[1].trim();
   }
@@ -73,6 +92,17 @@ export function parseProdukMetaFromText(text: string): ProdukMeta {
   }
 
   return meta;
+}
+
+export function parseSatuanFromText(text: string): string | undefined {
+  const segments = text.split(/[,;]+/).map((part) => part.trim()).filter(Boolean);
+  for (const segment of segments) {
+    const match = segment.match(/^(?:satuan|unit)\s*[:\-]?\s*([\w]+)$/i);
+    if (match?.[1]) return match[1];
+  }
+
+  const inline = text.match(/\b(?:satuan|unit)\s*[:\-]?\s*([\w]+)/i);
+  return inline?.[1];
 }
 
 export function inferProdukMeta(namaProduk: string, unit?: string): ProdukMeta {

@@ -36,7 +36,7 @@ function formatBarangMasukPreview(payload: PendingBarangMasukDraft): CrudConfirm
     fields.push({ label: "Keterangan", value: payload.keterangan });
   }
   if (payload.dokumentasi_nama) {
-    fields.push({ label: "Lampiran", value: payload.dokumentasi_nama });
+    fields.push({ label: "Thumbnail", value: payload.dokumentasi_nama });
   }
 
   return {

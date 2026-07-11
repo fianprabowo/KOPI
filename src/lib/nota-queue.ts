@@ -1,4 +1,4 @@
-import { mergeProdukMeta, parseProdukMetaFromText, resolveProdukMeta, type ProdukMeta } from "./produk-meta";
+import { mergeProdukMeta, parseProdukMetaFromText, parseSatuanFromText, resolveProdukMeta, type ProdukMeta } from "./produk-meta";
 import { normalizeUnit, sanitizeProdukName } from "./tambah-produk-guide";
 
 export type NotaUnmatchedDraft = {
@@ -57,7 +57,7 @@ export function prefillNotaUnmatched(
 
 export function applyMetaToNotaUnmatched(draft: NotaUnmatchedDraft, text: string): NotaUnmatchedDraft {
   const parsed = parseProdukMetaFromText(text);
-  const satuanMatch = text.match(/\b(?:satuan|unit)\s*[:\-]?\s*(\w+)/i);
+  const satuan = parseSatuanFromText(text);
   const merged = mergeProdukMeta(
     {
       kategori: draft.kategori,
@@ -71,7 +71,7 @@ export function applyMetaToNotaUnmatched(draft: NotaUnmatchedDraft, text: string
   return {
     ...draft,
     ...merged,
-    unit: satuanMatch?.[1] ? normalizeUnit(satuanMatch[1]) : draft.unit,
+    unit: satuan ? normalizeUnit(satuan) : draft.unit,
     reviewed: false,
   };
 }

@@ -40,7 +40,6 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      dokumentasi_nama: uploadFile.name || "nota.jpg",
       extracted_data: {
         tanggal: extracted.tanggal,
         supplier: extracted.supplier,
