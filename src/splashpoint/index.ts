@@ -1,0 +1,1 @@
+export { SplashPointLanding } from "./SplashPointLanding";
