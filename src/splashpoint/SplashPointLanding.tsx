@@ -165,12 +165,15 @@ export function SplashPointLanding() {
             <a href="#story" className="transition hover:text-cyan-700">
               Story
             </a>
+            <a href="/deck" className="transition hover:text-cyan-700">
+              Pitch deck
+            </a>
           </nav>
           <a
-            href="#contact"
+            href="/deck"
             className="rounded-full bg-gradient-to-r from-cyan-600 to-teal-700 px-4 py-2 text-sm font-semibold text-white shadow-lg shadow-cyan-700/20 transition hover:from-cyan-500 hover:to-teal-600"
           >
-            Partner with us
+            Pitch deck
           </a>
         </div>
       </header>
